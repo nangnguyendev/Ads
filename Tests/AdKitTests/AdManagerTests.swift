@@ -59,8 +59,16 @@ final class MockTracking: TrackingAuthorizing {
 final class MockConsent: ConsentProvider {
     var canRequestAds = true
     var isPrivacyOptionsRequired = true
+    /// Mirrors UMP at a cold start: `canRequestAds` is false until the consent info update finishes.
+    var canRequestAdsOnlyAfterGather = false
+    var presentsForm = false
+    private(set) var didPresentFormInLastGather = false
 
-    func gatherConsent(audience: AdAudience, from controller: AdPresentingController?) async throws -> ConsentStatus { .obtained }
+    func gatherConsent(audience: AdAudience, from controller: AdPresentingController?) async throws -> ConsentStatus {
+        if canRequestAdsOnlyAfterGather { canRequestAds = true }
+        didPresentFormInLastGather = presentsForm
+        return .obtained
+    }
     func presentPrivacyOptions(from controller: AdPresentingController) async throws {}
 }
 
@@ -139,6 +147,23 @@ final class AdManagerTests: XCTestCase {
         XCTAssertFalse(AdFormat.banner.isFullScreen)
         XCTAssertTrue(AdFormat.appOpen.isFullScreen)
         XCTAssertEqual(AdUnitIDs.googleTestIDs[.native], "ca-app-pub-3940256099942544/3986624511")
+    }
+
+    func testColdStartAppOpenShowsForReturningUser() async {
+        tracking.status = .authorized
+        consent.canRequestAds = false
+        consent.canRequestAdsOnlyAfterGather = true
+        let manager = makeManager()
+        await manager.start(from: presenter)
+        XCTAssertNotNil(store.load().lastImpression(of: [.appOpen]))
+    }
+
+    func testNoColdStartAppOpenRightAfterTheConsentForm() async {
+        tracking.status = .authorized
+        consent.presentsForm = true
+        let manager = makeManager()
+        await manager.start(from: presenter)
+        XCTAssertNil(store.load().lastImpression(of: [.appOpen]))
     }
 
     func testChildDirectedAudienceNeverRequestsTracking() async {

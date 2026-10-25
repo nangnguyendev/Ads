@@ -90,7 +90,6 @@ public final class AdManager: ObservableObject {
         guard state == .idle else { return }
         state = .gatheringConsent
 
-        let couldRequestAdsBefore = consent.canRequestAds
         do {
             let status = try await consent.gatherConsent(audience: configuration.audience, from: controller)
             emit(.consentGathered(status))
@@ -99,7 +98,8 @@ public final class AdManager: ObservableObject {
         }
         canRequestAds = consent.canRequestAds
         isPrivacyOptionsRequired = consent.isPrivacyOptionsRequired
-        if canRequestAds && !couldRequestAdsBefore { didPromptThisLaunch = true }
+        // Not `canRequestAds` before and after: UMP reports false at every cold start until its update finishes.
+        if consent.didPresentFormInLastGather { didPromptThisLaunch = true }
 
         trackingStatus = tracking.status
         if configuration.requestsTrackingAuthorization, configuration.audience.allowsTracking, trackingStatus == .notDetermined {

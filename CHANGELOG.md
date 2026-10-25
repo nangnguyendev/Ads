@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.1] - 2026-10-25
+
+### Fixed
+- Cold start app open ads never showed for returning users. AdKit skipped them whenever `canRequestAds` went from false to true during consent gathering, but UMP reports false at every cold start until its update finishes. `ConsentProvider.didPresentFormInLastGather` now says whether a consent form was actually shown. It has a default of `false`, and `UMPConsentProvider` sets it.
+
 ## [1.2.0] - 2026-10-25
 
 ### Added

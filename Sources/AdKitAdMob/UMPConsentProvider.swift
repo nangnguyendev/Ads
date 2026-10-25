@@ -13,6 +13,7 @@ public final class UMPConsentProvider: ConsentProvider {
 
     private let debugGeography: DebugGeography?
     private let testDeviceIDs: [String]
+    public private(set) var didPresentFormInLastGather = false
 
     public init(debugGeography: DebugGeography? = nil, testDeviceIDs: [String] = []) {
         self.debugGeography = debugGeography
@@ -41,7 +42,11 @@ public final class UMPConsentProvider: ConsentProvider {
             parameters.debugSettings = settings
         }
 
+        didPresentFormInLastGather = false
         try await ConsentInformation.shared.requestConsentInfoUpdate(with: parameters)
+        // loadAndPresentIfRequired shows a form only while consent is still required.
+        didPresentFormInLastGather = ConsentInformation.shared.consentStatus == .required
+            && ConsentInformation.shared.formStatus == .available
         try await ConsentForm.loadAndPresentIfRequired(from: controller)
         return Self.map(ConsentInformation.shared.consentStatus)
     }

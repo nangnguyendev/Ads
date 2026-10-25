@@ -113,6 +113,12 @@ public protocol ConsentProvider: AnyObject {
     var isPrivacyOptionsRequired: Bool { get }
     func gatherConsent(audience: AdAudience, from controller: AdPresentingController?) async throws -> ConsentStatus
     func presentPrivacyOptions(from controller: AdPresentingController) async throws
+    /// Whether the last `gatherConsent` call showed a consent form. A cold start app open ad is skipped right after one.
+    var didPresentFormInLastGather: Bool { get }
+}
+
+public extension ConsentProvider {
+    var didPresentFormInLastGather: Bool { false }
 }
 
 @MainActor
