@@ -46,6 +46,12 @@ public protocol AdNetwork: AnyObject {
     #if canImport(UIKit)
     func makeBannerAd(adUnitID: String) -> BannerAd
     #endif
+    /// Called after the user changes their choices in the privacy options form.
+    func privacyChoicesDidChange()
+}
+
+public extension AdNetwork {
+    func privacyChoicesDidChange() {}
 }
 
 public enum ConsentStatus: String, Sendable {

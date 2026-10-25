@@ -14,6 +14,7 @@ A Swift Package for adding ads to iOS apps. It follows US market rules by defaul
   - Impression-level revenue reporting.
   - SwiftUI helpers.
 - **`AdKitAdMob`**: an adapter for Google Mobile Ads SDK 13.x and the User Messaging Platform (UMP) 3.x, including the US state regulations consent message.
+- **`AdKitAdMobMediation`** (optional): AdMob bidding adapters for AppLovin, Unity Ads, Liftoff Monetize, Meta Audience Network, Mintegral, InMobi and Moloco, with the US state "Do Not Sell" choice passed to each SDK.
 - **Formats**: adaptive banner, interstitial, rewarded and app open.
 
 See [Docs/US-Ad-Compliance.md](Docs/US-Ad-Compliance.md) for each rule and how AdKit handles it.
@@ -174,7 +175,27 @@ await ads.withFullScreenAdsSuppressed {
 
 Use it for checkout, onboarding, recording, calls and form entry.
 
-### 7. Impression-level revenue
+### 7. Mediation (higher eCPM)
+
+Add the `AdKitAdMobMediation` product and build the network with it:
+
+```swift
+import AdKitAdMobMediation
+
+network: AdMobMediation.network(startsMuted: true)
+```
+
+Then, in AdMob:
+
+1. Mediation ▸ create a mediation group per format and add each network as a **bidding** ad source.
+2. Privacy & messaging ▸ US states ▸ add the networks to the partner list.
+3. Add every network's SKAdNetwork IDs to `SKAdNetworkItems`. Each network publishes its list, for example AppLovin's at `https://skadnetwork-ids.applovin.com/v1/skadnetworkids.json`.
+
+GDPR consent and the child-directed and under-age settings reach the adapters through UMP and the Google Mobile Ads request configuration. Google doesn't forward the US state opt-out, so `AdMobMediation` reads it from the IAB GPP string UMP stores and sets it on every SDK before ads start and after the user changes their Privacy Choices. Minors are always treated as opted out.
+
+Use `MobileAds.shared.presentAdInspector(from:)` to check that each network loads.
+
+### 8. Impression-level revenue
 
 ```swift
 ads.revenueHandler = { revenue in

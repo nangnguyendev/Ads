@@ -155,6 +155,7 @@ public final class AdManager: ObservableObject {
         }
         canRequestAds = consent.canRequestAds
         isPrivacyOptionsRequired = consent.isPrivacyOptionsRequired
+        network.privacyChoicesDidChange()
         if canRequestAds, state == .disabled {
             await startNetwork()
         } else if !canRequestAds {

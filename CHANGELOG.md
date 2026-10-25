@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0] - 2026-10-25
+
+### Added
+- `AdKitAdMobMediation`: AdMob bidding adapters for AppLovin, Unity Ads, Liftoff Monetize, Meta Audience Network, Mintegral, InMobi and Moloco. `AdMobMediation.network()` passes the US state "Do Not Sell" choice to each SDK before ads start and after the user changes their Privacy Choices.
+- `USPrivacy`: reads the US state opt-out from the IAB GPP US National section (or `IABUSPrivacy_String`).
+- `AdMobNetwork.applyPrivacy` hook and `AdNetwork.privacyChoicesDidChange()` (with a default no-op implementation).
+
 ## [1.0.0] - 2026-10-19
 
 ### Added
