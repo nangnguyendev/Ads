@@ -29,11 +29,13 @@ final class MockNetwork: AdNetwork {
     var loadCount: [AdFormat: Int] = [:]
     var failLoads = false
     var clicksOnPresent = false
+    var loadDelay: UInt64 = 0
 
     func start(audience: AdAudience, testDeviceIDs: [String]) async {}
 
     func loadFullScreenAd(_ format: AdFormat, adUnitID: String) async throws -> FullScreenAd {
         loadCount[format, default: 0] += 1
+        if loadDelay > 0 { try? await Task.sleep(nanoseconds: loadDelay) }
         if failLoads { throw URLError(.notConnectedToInternet) }
         let ad = MockFullScreenAd(format: format, adUnitID: adUnitID, reward: format == .rewarded ? AdReward(type: "coins", amount: 10) : nil)
         ad.network = self
@@ -107,6 +109,36 @@ final class AdManagerTests: XCTestCase {
         XCTAssertEqual(tracking.requestCount, 1)
         XCTAssertEqual(manager.readyFormats, [.interstitial, .rewarded, .appOpen])
         XCTAssertTrue(manager.isPrivacyOptionsRequired)
+    }
+
+    func testAppOpenSkippedWhenSuppressedWhileLoading() async {
+        tracking.status = .authorized
+        network.loadDelay = 300_000_000
+        var events: [AdEvent] = []
+        let manager = makeManager()
+        manager.eventHandler = { events.append($0) }
+        let start = Task { await manager.start(from: presenter) }
+        // The alarm starts ringing while the cold start app open ad is still loading.
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        manager.beginSuppressingFullScreenAds()
+        await start.value
+        XCTAssertNil(store.load().lastImpression(of: [.appOpen]))
+        XCTAssertTrue(events.contains { if case .blocked(.appOpen, _, .suppressed) = $0 { return true }; return false })
+    }
+
+    func testNativeAdsNeedANetworkThatSupportsThem() async {
+        let manager = makeManager()
+        await manager.start(from: presenter)
+        XCTAssertTrue(manager.shouldShowNativeAds)
+        manager.isAdFree = true
+        XCTAssertFalse(manager.shouldShowNativeAds)
+    }
+
+    func testNativeIsNotFullScreen() {
+        XCTAssertFalse(AdFormat.native.isFullScreen)
+        XCTAssertFalse(AdFormat.banner.isFullScreen)
+        XCTAssertTrue(AdFormat.appOpen.isFullScreen)
+        XCTAssertEqual(AdUnitIDs.googleTestIDs[.native], "ca-app-pub-3940256099942544/3986624511")
     }
 
     func testChildDirectedAudienceNeverRequestsTracking() async {

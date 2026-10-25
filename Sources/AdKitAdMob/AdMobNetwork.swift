@@ -50,13 +50,17 @@ public final class AdMobNetwork: AdNetwork {
         case .appOpen:
             let ad = try await AppOpenAd.load(with: adUnitID, request: Request())
             return AdMobFullScreenAd(appOpen: ad)
-        case .banner:
+        case .banner, .native:
             throw AdMobAdapterError.unsupportedFormat(format)
         }
     }
 
     public func makeBannerAd(adUnitID: String) -> BannerAd {
         AdMobBannerAd(adUnitID: adUnitID)
+    }
+
+    public func makeNativeAd(adUnitID: String, style: NativeAdStyle) -> NativeCardAd? {
+        AdMobNativeAd(adUnitID: adUnitID, style: style)
     }
 
     private static func rating(_ rating: AdContentRating) -> GADMaxAdContentRating {

@@ -76,6 +76,10 @@ public final class AdManager: ObservableObject {
         state == .ready && canRequestAds && !isAdFree && configuration.adUnitIDs.banner != nil
     }
 
+    public var shouldShowNativeAds: Bool {
+        state == .ready && canRequestAds && !isAdFree && configuration.adUnitIDs.native != nil
+    }
+
     public var isRewardedAdAvailable: Bool {
         readyFormats.contains(.rewarded) && engine.evaluateRewarded(context: context()).isAllowed
     }
@@ -201,6 +205,22 @@ public final class AdManager: ObservableObject {
         }
         return banner
     }
+
+    public func makeNativeAd(placement: AdPlacement = .native, style: NativeAdStyle = NativeAdStyle()) -> NativeCardAd? {
+        guard shouldShowNativeAds, let unitID = configuration.adUnitIDs.native,
+              let ad = network.makeNativeAd(adUnitID: unitID, style: style) else { return nil }
+        ad.revenueHandler = { [weak self] revenue in
+            self?.emit(.revenue(revenue.with(placement: placement.id)))
+        }
+        ad.clickHandler = { [weak self] in
+            self?.skipNextAppOpen = true
+            self?.emit(.clicked(.native, placement: placement.id))
+        }
+        ad.impressionHandler = { [weak self] in
+            self?.emit(.shown(.native, placement: placement.id))
+        }
+        return ad
+    }
     #endif
 
     private func startNetwork() async {
@@ -253,6 +273,11 @@ public final class AdManager: ObservableObject {
             return nil
         }
         guard let presenter = resolve(controller) else { return nil }
+        // A sensitive flow (such as an alarm ringing) may have started while an app open ad was loading.
+        if suppressionCount > 0 && format != .rewarded {
+            emit(.blocked(format, placement: placement, reason: .suppressed))
+            return nil
+        }
 
         cache[format] = nil
         updateReadiness()
@@ -283,7 +308,7 @@ public final class AdManager: ObservableObject {
     private func shouldKeepLoaded(_ format: AdFormat) -> Bool {
         guard state == .ready, canRequestAds, configuration.adUnitIDs[format] != nil else { return false }
         switch format {
-        case .banner: return false
+        case .banner, .native: return false
         case .rewarded: return !isAdFree || configuration.policy.rewardedAvailableToAdFreeUsers
         case .appOpen: return !isAdFree && configuration.policy.appOpen.isEnabled
         case .interstitial: return !isAdFree

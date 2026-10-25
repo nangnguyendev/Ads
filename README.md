@@ -15,7 +15,7 @@ A Swift Package for adding ads to iOS apps. It follows US market rules by defaul
   - SwiftUI helpers.
 - **`AdKitAdMob`**: an adapter for Google Mobile Ads SDK 13.x and the User Messaging Platform (UMP) 3.x, including the US state regulations consent message.
 - **`AdKitAdMobMediation`** (optional): AdMob bidding adapters for AppLovin, Unity Ads, Liftoff Monetize, Meta Audience Network, Mintegral, InMobi and Moloco, with the US state "Do Not Sell" choice passed to each SDK.
-- **Formats**: adaptive banner, interstitial, rewarded and app open.
+- **Formats**: adaptive banner, native, interstitial, rewarded and app open.
 
 See [Docs/US-Ad-Compliance.md](Docs/US-Ad-Compliance.md) for each rule and how AdKit handles it.
 
@@ -195,7 +195,18 @@ GDPR consent and the child-directed and under-age settings reach the adapters th
 
 Use `MobileAds.shared.presentAdInspector(from:)` to check that each network loads.
 
-### 8. Impression-level revenue
+### 8. Native ads
+
+A card that sits between your own cards. It takes no space until an ad loads, and keeps one ad for the life of the view.
+
+```swift
+NativeAdCardView(manager: ads, placement: AdPlacement("today_native", format: .native),
+                 style: NativeAdStyle(background: .secondarySystemBackground, accent: .systemOrange))
+```
+
+Add a native ad unit ID to `AdUnitIDs(native:)`. Don't place the card directly next to your own buttons, so taps on them aren't mistaken for ad clicks.
+
+### 9. Impression-level revenue
 
 ```swift
 ads.revenueHandler = { revenue in

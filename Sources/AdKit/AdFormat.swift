@@ -5,14 +5,20 @@ public enum AdFormat: String, CaseIterable, Codable, Sendable {
     case interstitial
     case rewarded
     case appOpen
+    case native
 
-    public var isFullScreen: Bool { self != .banner }
+    public var isFullScreen: Bool {
+        switch self {
+        case .interstitial, .rewarded, .appOpen: return true
+        case .banner, .native: return false
+        }
+    }
 
     public var cacheLifetime: TimeInterval {
         switch self {
         case .appOpen: return 4 * 3600
         case .banner: return .infinity
-        case .interstitial, .rewarded: return 3600
+        case .interstitial, .rewarded, .native: return 3600
         }
     }
 }
@@ -38,6 +44,7 @@ public struct AdPlacement: Hashable, Codable, Sendable {
 
     public static let appOpen = AdPlacement("app_open", format: .appOpen)
     public static let banner = AdPlacement("banner", format: .banner)
+    public static let native = AdPlacement("native", format: .native)
 }
 
 public struct AdUnitIDs: Sendable, Equatable {
@@ -45,12 +52,14 @@ public struct AdUnitIDs: Sendable, Equatable {
     public var interstitial: String?
     public var rewarded: String?
     public var appOpen: String?
+    public var native: String?
 
-    public init(banner: String? = nil, interstitial: String? = nil, rewarded: String? = nil, appOpen: String? = nil) {
+    public init(banner: String? = nil, interstitial: String? = nil, rewarded: String? = nil, appOpen: String? = nil, native: String? = nil) {
         self.banner = banner
         self.interstitial = interstitial
         self.rewarded = rewarded
         self.appOpen = appOpen
+        self.native = native
     }
 
     public subscript(format: AdFormat) -> String? {
@@ -59,6 +68,7 @@ public struct AdUnitIDs: Sendable, Equatable {
         case .interstitial: return interstitial
         case .rewarded: return rewarded
         case .appOpen: return appOpen
+        case .native: return native
         }
     }
 
@@ -66,7 +76,8 @@ public struct AdUnitIDs: Sendable, Equatable {
         banner: "ca-app-pub-3940256099942544/2435281174",
         interstitial: "ca-app-pub-3940256099942544/4411468910",
         rewarded: "ca-app-pub-3940256099942544/1712485313",
-        appOpen: "ca-app-pub-3940256099942544/5575463023"
+        appOpen: "ca-app-pub-3940256099942544/5575463023",
+        native: "ca-app-pub-3940256099942544/3986624511"
     )
 }
 

@@ -36,6 +36,47 @@ public protocol BannerAd: AnyObject {
     var clickHandler: (() -> Void)? { get set }
     func load(width: CGFloat) async throws -> CGSize
 }
+
+/// A native ad laid out as a card. `load()` fills `view`; the host sizes it from `fittingHeight(for:)`.
+@MainActor
+public protocol NativeCardAd: AnyObject {
+    var view: UIView { get }
+    var rootViewController: UIViewController? { get set }
+    var revenueHandler: ((AdRevenue) -> Void)? { get set }
+    var clickHandler: (() -> Void)? { get set }
+    var impressionHandler: (() -> Void)? { get set }
+    func load() async throws
+    func fittingHeight(for width: CGFloat) -> CGFloat
+}
+
+/// Colors and shape for a native ad card, so it matches the app around it.
+public struct NativeAdStyle {
+    public var background: UIColor
+    public var primaryText: UIColor
+    public var secondaryText: UIColor
+    public var accent: UIColor
+    public var accentText: UIColor
+    public var cornerRadius: CGFloat
+    public var showsMedia: Bool
+
+    public init(
+        background: UIColor = .secondarySystemGroupedBackground,
+        primaryText: UIColor = .label,
+        secondaryText: UIColor = .secondaryLabel,
+        accent: UIColor = .tintColor,
+        accentText: UIColor = .white,
+        cornerRadius: CGFloat = 20,
+        showsMedia: Bool = true
+    ) {
+        self.background = background
+        self.primaryText = primaryText
+        self.secondaryText = secondaryText
+        self.accent = accent
+        self.accentText = accentText
+        self.cornerRadius = cornerRadius
+        self.showsMedia = showsMedia
+    }
+}
 #endif
 
 @MainActor
@@ -45,6 +86,8 @@ public protocol AdNetwork: AnyObject {
     func loadFullScreenAd(_ format: AdFormat, adUnitID: String) async throws -> FullScreenAd
     #if canImport(UIKit)
     func makeBannerAd(adUnitID: String) -> BannerAd
+    /// `nil` when the network has no native ads.
+    func makeNativeAd(adUnitID: String, style: NativeAdStyle) -> NativeCardAd?
     #endif
     /// Called after the user changes their choices in the privacy options form.
     func privacyChoicesDidChange()
@@ -52,6 +95,9 @@ public protocol AdNetwork: AnyObject {
 
 public extension AdNetwork {
     func privacyChoicesDidChange() {}
+    #if canImport(UIKit)
+    func makeNativeAd(adUnitID: String, style: NativeAdStyle) -> NativeCardAd? { nil }
+    #endif
 }
 
 public enum ConsentStatus: String, Sendable {
